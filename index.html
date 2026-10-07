@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Top Stock</title>
+
+    <link
+            rel="stylesheet"
+            href="style.css"
+    >
+
+</head>
+
+
+<body>
+
+<main class="access-page">
+
+    <div class="access-card">
+
+        <h1>
+            TOP STOCK
+        </h1>
+
+        <p>
+            Store Access
+        </p>
+
+
+        <form id="loginForm">
+
+            <label for="username">
+                Your Name
+            </label>
+
+            <input
+                    type="text"
+                    id="username"
+                    placeholder="Enter your name"
+                    required
+            >
+
+
+            <label for="password">
+                Store Password
+            </label>
+
+            <input
+                    type="password"
+                    id="password"
+                    placeholder="Enter password"
+                    required
+            >
+
+
+            <button type="submit">
+                ENTER
+            </button>
+
+
+            <p
+                    id="loginError"
+                    class="error"
+            ></p>
+
+        </form>
+
+    </div>
+
+</main>
+
+
+<!-- Supabase must load BEFORE app.js -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="app.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Back Room - Top Stock</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+
+<body>
+
+<main class="page">
+
+    <header class="page-header">
+
+        <button
+                class="back-button"
+                onclick="history.back()"
+        >
+            ← BACK
+        </button>
+
+        <h1>BACK ROOM</h1>
+
+    </header>
+
+
+    <!-- VIEW ALL -->
+
+    <button
+            class="view-all-button"
+            onclick="window.location.href='all.html'"
+    >
+        VIEW ALL
+    </button>
+
+
+    <!-- LOCATIONS -->
+
+    <section class="backroom-section">
+
+        <h2>Locations</h2>
+
+        <div
+                id="backroomLocations"
+                class="backroom-locations"
+        >
+            <p>Loading locations...</p>
+        </div>
+
+    </section>
+
+
+    <!-- LOCATION CONTENT -->
+
+    <section
+            id="locationContents"
+            class="location-contents"
+    ></section>
+
+</main>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+<script>
+
+    // ========================================
+    // SUPABASE
+    // ========================================
+
+    const SUPABASE_URL =
+        "https://tswvzplgbqozvjpxvmop.supabase.co";
+
+    const SUPABASE_KEY =
+        "sb_publishable_zmRNtoynOoehGXK1F3JvMw_pxtINLOx";
+
+    const supabaseClient =
+        supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_KEY
+        );
+
+
+    // ========================================
+    // LOAD LOCATIONS
+    // ========================================
+
+    async function loadBackRoomLocations() {
+
+        const container =
+            document.getElementById(
+                "backroomLocations"
+            );
+
+
+        const {
+            data,
+            error
+        } =
+            await supabaseClient
+                .from("inventory")
+                .select("location")
+                .eq(
+                    "location_type",
+                    "back_room"
+                );
+
+
+        if (error) {
+
+            console.error(
+                "Location error:",
+                error
+            );
+
+            container.innerHTML = `
+                    <div class="no-results">
+                        <p>
+                            Database error:
+                            ${error.message}
+                        </p>
+                    </div>
+                `;
+
+            return;
+        }
+
+
+        // Get unique locations
+
+        const locations = [
+            ...new Set(
+                data.map(
+                    item => item.location
+                )
+            )
+        ];
+
+
+        // Sort locations
+
+        locations.sort(
+            (a, b) =>
+                a.localeCompare(
+                    b,
+                    undefined,
+                    {
+                        numeric: true
+                    }
+                )
+        );
+
+
+        if (locations.length === 0) {
+
+            container.innerHTML = `
+                    <div class="no-results">
+                        <p>
+                            No back room locations
+                            found.
+                        </p>
+                    </div>
+                `;
+
+            return;
+        }
+
+
+        // Create buttons
+
+        container.innerHTML = "";
+
+
+        locations.forEach(
+            function (location) {
+
+                const button =
+                    document.createElement(
+                        "button"
+                    );
+
+
+                button.className =
+                    "location-button";
+
+
+                button.textContent =
+                    location;
+
+
+                button.addEventListener(
+                    "click",
+                    function () {
+
+                        showLocation(
+                            location
+                        );
+
+                    }
+                );
+
+
+                container.appendChild(
+                    button
+                );
+
+            }
+        );
+    }
+
+
+    // ========================================
+    // SHOW LOCATION
+    // ========================================
+
+    async function showLocation(location) {
+
+        const container =
+            document.getElementById(
+                "locationContents"
+            );
+
+
+        container.innerHTML = `
+                <div class="location-card">
+                    <p>Loading ${location}...</p>
+                </div>
+            `;
+
+
+        // ------------------------------------
+        // Get inventory at this location
+        // ------------------------------------
+
+        const {
+            data: inventory,
+            error: inventoryError
+        } =
+            await supabaseClient
+                .from("inventory")
+                .select(
+                    "id, costume_id, location, quantities"
+                )
+                .eq(
+                    "location_type",
+                    "back_room"
+                )
+                .eq(
+                    "location",
+                    location
+                );
+
+
+        if (inventoryError) {
+
+            console.error(
+                "Inventory error:",
+                inventoryError
+            );
+
+            container.innerHTML = `
+                    <div class="no-results">
+                        <p>
+                            Database error:
+                            ${inventoryError.message}
+                        </p>
+                    </div>
+                `;
+
+            return;
+        }
+
+
+        if (!inventory || inventory.length === 0) {
+
+            container.innerHTML = `
+                    <div class="no-results">
+                        <p>
+                            Nothing is currently
+                            stored in ${location}.
+                        </p>
+                    </div>
+                `;
+
+            return;
+        }
+
+
+        // ------------------------------------
+        // Get costume IDs
+        // ------------------------------------
+
+        const costumeIds =
+            inventory.map(
+                item => item.costume_id
+            );
+
+
+        // ------------------------------------
+        // Get costume numbers
+        // ------------------------------------
+
+        const {
+            data: costumes,
+            error: costumeError
+        } =
+            await supabaseClient
+                .from("costumes")
+                .select(
+                    "id, costume_number"
+                )
+                .in(
+                    "id",
+                    costumeIds
+                );
+
+
+        if (costumeError) {
+
+            console.error(
+                "Costume error:",
+                costumeError
+            );
+
+            container.innerHTML = `
+                    <div class="no-results">
+                        <p>
+                            Database error:
+                            ${costumeError.message}
+                        </p>
+                    </div>
+                `;
+
+            return;
+        }
+
+
+        // ------------------------------------
+        // Sort costumes numerically
+        // ------------------------------------
+
+        inventory.sort(
+            function (a, b) {
+
+                const costumeA =
+                    costumes.find(
+                        costume =>
+                            costume.id ===
+                            a.costume_id
+                    );
+
+                const costumeB =
+                    costumes.find(
+                        costume =>
+                            costume.id ===
+                            b.costume_id
+                    );
+
+
+                return String(
+                    costumeA?.costume_number || ""
+                ).localeCompare(
+                    String(
+                        costumeB?.costume_number || ""
+                    ),
+                    undefined,
+                    {
+                        numeric: true
+                    }
+                );
+            }
+        );
+
+
+        // ------------------------------------
+        // Build HTML
+        // ------------------------------------
+
+        let html = `
+                <div class="location-card">
+
+                    <h2>
+                        ${location}
+                    </h2>
+            `;
+
+
+        inventory.forEach(
+            function (item) {
+
+                const costume =
+                    costumes.find(
+                        costume =>
+                            costume.id ===
+                            item.costume_id
+                    );
+
+
+                if (!costume) {
+                    return;
+                }
+
+
+                const quantities =
+                    item.quantities || {};
+
+
+                let sizeHTML = "";
+
+
+                Object.entries(
+                    quantities
+                ).forEach(
+                    function ([size, quantity]) {
+
+                        quantity =
+                            Number(quantity);
+
+
+                        // Don't show zero quantities
+
+                        if (quantity > 0) {
+
+                            sizeHTML += `
+                                    <div class="size-row">
+
+                                        <span>
+                                            ${size}
+                                        </span>
+
+                                        <strong>
+                                            ${quantity}
+                                        </strong>
+
+                                    </div>
+                                `;
+                        }
+
+                    }
+                );
+
+
+                html += `
+                        <div class="backroom-costume">
+
+                            <h3>
+                                Costume #${costume.costume_number}
+                            </h3>
+
+                            ${sizeHTML}
+
+                        </div>
+                    `;
+
+            }
+        );
+
+
+        html += `
+                </div>
+            `;
+
+
+        container.innerHTML =
+            html;
+
+
+        // Scroll to results
+
+        container.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+
+    }
+
+
+    // ========================================
+    // START
+    // ========================================
+
+    loadBackRoomLocations();
+
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Add Costume - Top Stock</title>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+
+<body>
+
+<main class="page">
+
+
+    <!-- ====================================
+         HEADER
+    ===================================== -->
+
+    <header class="page-header">
+
+        <button
+                class="back-button"
+                onclick="history.back()"
+        >
+            ← BACK
+        </button>
+
+        <h1>
+            ADD COSTUME
+        </h1>
+
+    </header>
+
+
+    <!-- ====================================
+         FORM
+    ===================================== -->
+
+    <form
+            id="addCostumeForm"
+            class="form-card"
+    >
+
+
+        <!-- COSTUME NUMBER -->
+
+        <label for="costumeNumber">
+            Costume Number
+        </label>
+
+        <input
+                type="text"
+                id="costumeNumber"
+                placeholder="Enter costume number"
+                required
+        >
+
+
+        <!-- LOCATION TYPE -->
+
+        <label>
+            Location Type
+        </label>
+
+
+        <div class="location-options">
+
+            <label class="location-option">
+
+                <input
+                        type="radio"
+                        name="locationType"
+                        value="top_stock"
+                        checked
+                >
+
+                <span>
+                        Floor
+                    </span>
+
+            </label>
+
+
+            <label class="location-option">
+
+                <input
+                        type="radio"
+                        name="locationType"
+                        value="back_room"
+                >
+
+                <span>
+                        Back Room
+                    </span>
+
+            </label>
+
+        </div>
+
+
+        <!-- LOCATION -->
+
+        <label for="location">
+            Location
+        </label>
+
+        <input
+                type="text"
+                id="location"
+                placeholder="Example: Aisle 6 Back Left"
+                required
+        >
+
+
+        <!-- ====================================
+             SIZES
+        ===================================== -->
+
+        <div class="size-section">
+
+            <h2>
+                Sizes
+            </h2>
+
+
+            <div
+                    id="sizeList"
+                    class="dynamic-size-list"
+            ></div>
+
+        </div>
+
+
+        <!-- ====================================
+             CUSTOM SIZE
+        ===================================== -->
+
+        <div class="custom-size-section">
+
+            <button
+                    type="button"
+                    id="addCustomSize"
+                    class="secondary-button"
+            >
+                + ADD SIZE
+            </button>
+
+        </div>
+
+
+        <!-- ====================================
+             SUBMIT
+        ===================================== -->
+
+        <button type="submit">
+            ADD COSTUME
+        </button>
+
+
+        <p
+                id="addMessage"
+                class="form-message"
+        ></p>
+
+
+    </form>
+
+</main>
+
+
+<!-- ========================================
+     SCRIPTS
+========================================= -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="app.js"></script>
+
+
+</body>
+
+</html>

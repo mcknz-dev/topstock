@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Inventory History - Top Stock</title>
+
+    <link
+            rel="stylesheet"
+            href="style.css"
+    >
+
+</head>
+
+<body>
+
+<main class="page master-history-page">
+
+    <header class="page-header">
+
+        <button
+                class="back-button"
+                onclick="history.back()"
+        >
+            ← BACK
+        </button>
+
+        <h1>
+            INVENTORY HISTORY
+        </h1>
+
+    </header>
+
+
+    <div
+            id="masterHistory"
+            class="master-history"
+    >
+
+        <p class="history-loading">
+            Loading history...
+        </p>
+
+    </div>
+
+</main>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="app.js"></script>
+
+
+<script>
+
+    async function loadMasterHistory() {
+
+        const container =
+            document.getElementById(
+                "masterHistory"
+            );
+
+
+        // --------------------------------
+        // Get history
+        // --------------------------------
+
+        const {
+            data: history,
+            error: historyError
+        } =
+            await supabaseClient
+                .from("inventory_history")
+                .select("*")
+                .order(
+                    "created_at",
+                    {
+                        ascending: false
+                    }
+                )
+                .limit(200);
+
+
+        if (historyError) {
+
+            container.innerHTML = `
+                    <div class="no-results">
+                        <p>
+                            Could not load history.
+                        </p>
+                    </div>
+                `;
+
+            console.error(historyError);
+
+            return;
+        }
+
+
+        if (!history || history.length === 0) {
+
+            container.innerHTML = `
+                    <div class="no-results">
+                        <p>
+                            No inventory history yet.
+                        </p>
+                    </div>
+                `;
+
+            return;
+        }
+
+
+        // --------------------------------
+        // Get costumes
+        // --------------------------------
+
+        const costumeIds =
+            [
+                ...new Set(
+                    history
+                        .map(
+                            item =>
+                                item.costume_id
+                        )
+                        .filter(Boolean)
+                )
+            ];
+
+
+        const {
+            data: costumes
+        } =
+            costumeIds.length
+                ? await supabaseClient
+                    .from("costumes")
+                    .select("*")
+                    .in(
+                        "id",
+                        costumeIds
+                    )
+                : {
+                    data: []
+                };
+
+
+        // --------------------------------
+        // Get inventory locations
+        // --------------------------------
+
+        const inventoryIds =
+            [
+                ...new Set(
+                    history
+                        .map(
+                            item =>
+                                item.inventory_id
+                        )
+                        .filter(Boolean)
+                )
+            ];
+
+
+        const {
+            data: inventory
+        } =
+            inventoryIds.length
+                ? await supabaseClient
+                    .from("inventory")
+                    .select("*")
+                    .in(
+                        "id",
+                        inventoryIds
+                    )
+                : {
+                    data: []
+                };
+
+
+        const costumeMap =
+            new Map(
+                (costumes || []).map(
+                    costume => [
+                        costume.id,
+                        costume
+                    ]
+                )
+            );
+
+
+        const inventoryMap =
+            new Map(
+                (inventory || []).map(
+                    item => [
+                        item.id,
+                        item
+                    ]
+                )
+            );
+
+
+        // --------------------------------
+        // Group by date
+        // --------------------------------
+
+        let currentDate = "";
+
+
+        let html = "";
+
+
+        history.forEach(
+            function (entry) {
+
+                const date =
+                    new Date(
+                        entry.created_at
+                    );
+
+
+                const dateLabel =
+                    formatDate(date);
+
+
+                if (
+                    dateLabel !==
+                    currentDate
+                ) {
+
+                    currentDate =
+                        dateLabel;
+
+
+                    html += `
+                            <div class="history-date">
+                                ${dateLabel}
+                            </div>
+                        `;
+
+                }
+
+
+                const costume =
+                    costumeMap.get(
+                        entry.costume_id
+                    );
+
+
+                const location =
+                    inventoryMap.get(
+                        entry.inventory_id
+                    );
+
+
+                const costumeNumber =
+                    costume
+                        ? costume.costume_number
+                        : null;
+
+
+                let locationText = "";
+
+
+                if (location) {
+
+                    const type =
+                        location.location_type ===
+                        "back_room"
+                            ? "Back Room"
+                            : "Floor";
+
+
+                    locationText =
+                        `${type} — ${location.location}`;
+
+                }
+
+
+                // --------------------------------
+                // Build action text
+                // --------------------------------
+
+                let actionText = "";
+
+
+                if (
+                    entry.action ===
+                    "added costume"
+                ) {
+
+                    actionText =
+                        `added costume #${escapeHTML(
+                            costumeNumber || "?"
+                        )}`;
+
+                }
+
+                else if (
+                    entry.action ===
+                    "changed quantity"
+                ) {
+
+                    const change =
+                        Number(
+                            entry.quantity_change
+                        ) || 0;
+
+
+                    if (change > 0) {
+
+                        actionText =
+                            `added ${change} ${escapeHTML(
+                                entry.size || ""
+                            )}`;
+
+                    }
+
+                    else if (change < 0) {
+
+                        actionText =
+                            `removed ${Math.abs(change)} ${escapeHTML(
+                                entry.size || ""
+                            )}`;
+
+                    }
+
+                    else {
+
+                        actionText =
+                            `changed ${escapeHTML(
+                                entry.size || "quantity"
+                            )}`;
+
+                    }
+
+                }
+
+                else {
+
+                    actionText =
+                        escapeHTML(
+                            entry.action || "updated inventory"
+                        );
+
+                }
+
+
+                // --------------------------------
+                // Detail line
+                // --------------------------------
+
+                let detailText = "";
+
+
+                if (
+                    locationText &&
+                    costumeNumber
+                ) {
+
+                    detailText =
+                        `Costume #${escapeHTML(
+                            costumeNumber
+                        )} · ${escapeHTML(
+                            locationText
+                        )}`;
+
+                }
+
+                else if (
+                    locationText
+                ) {
+
+                    detailText =
+                        escapeHTML(
+                            locationText
+                        );
+
+                }
+
+                else if (
+                    costumeNumber
+                ) {
+
+                    detailText =
+                        `Costume #${escapeHTML(
+                            costumeNumber
+                        )}`;
+
+                }
+
+
+                html += `
+
+                        <div class="master-history-entry">
+
+                            <div class="history-entry-main">
+
+                                <strong>
+                                    ${escapeHTML(
+                    entry.username || "Unknown"
+                )}
+                                </strong>
+
+                                <span>
+                                    ${actionText}
+                                </span>
+
+                            </div>
+
+
+                            ${
+                    detailText
+                        ? `
+                                        <div class="history-entry-detail">
+                                            ${detailText}
+                                        </div>
+                                    `
+                        : ""
+                }
+
+
+                            <div class="history-entry-time">
+
+                                ${formatTime(date)}
+
+                            </div>
+
+                        </div>
+
+                    `;
+
+            }
+        );
+
+
+        container.innerHTML =
+            html;
+
+    }
+
+
+    // ========================================
+    // DATE
+    // ========================================
+
+    function formatDate(date) {
+
+        const now =
+            new Date();
+
+
+        const today =
+            new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                now.getDate()
+            );
+
+
+        const yesterday =
+            new Date(today);
+
+
+        yesterday.setDate(
+            yesterday.getDate() - 1
+        );
+
+
+        const entryDate =
+            new Date(
+                date.getFullYear(),
+                date.getMonth(),
+                date.getDate()
+            );
+
+
+        if (
+            entryDate.getTime() ===
+            today.getTime()
+        ) {
+
+            return "TODAY";
+
+        }
+
+
+        if (
+            entryDate.getTime() ===
+            yesterday.getTime()
+        ) {
+
+            return "YESTERDAY";
+
+        }
+
+
+        return date.toLocaleDateString(
+            undefined,
+            {
+                month: "long",
+                day: "numeric",
+                year: "numeric"
+            }
+        ).toUpperCase();
+
+    }
+
+
+    // ========================================
+    // TIME
+    // ========================================
+
+    function formatTime(date) {
+
+        return date.toLocaleTimeString(
+            undefined,
+            {
+                hour: "numeric",
+                minute: "2-digit"
+            }
+        );
+
+    }
+
+
+    // ========================================
+    // ESCAPE HTML
+    // ========================================
+
+    function escapeHTML(value) {
+
+        return String(value)
+            .replace(
+                /&/g,
+                "&amp;"
+            )
+            .replace(
+                /</g,
+                "&lt;"
+            )
+            .replace(
+                />/g,
+                "&gt;"
+            )
+            .replace(
+                /"/g,
+                "&quot;"
+            )
+            .replace(
+                /'/g,
+                "&#039;"
+            );
+
+    }
+
+
+    loadMasterHistory();
+
+</script>
+
+</body>
+
+</html>

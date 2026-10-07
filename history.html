@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>History - Top Stock</title>
+
+    <link
+            rel="stylesheet"
+            href="style.css"
+    >
+
+</head>
+
+
+<body>
+
+<main class="page">
+
+    <header class="page-header">
+
+        <button
+                class="back-button"
+                onclick="history.back()"
+        >
+            ← BACK
+        </button>
+
+        <h1 id="historyTitle">
+            HISTORY
+        </h1>
+
+    </header>
+
+
+    <section
+            id="historyContainer"
+            class="history-container"
+    >
+
+        <p>
+            Loading history...
+        </p>
+
+    </section>
+
+</main>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="app.js"></script>
+
+
+<script>
+
+    // ========================================
+    // HISTORY PAGE
+    // ========================================
+
+    const historyContainer =
+        document.getElementById(
+            "historyContainer"
+        );
+
+
+    const historyTitle =
+        document.getElementById(
+            "historyTitle"
+        );
+
+
+    const params =
+        new URLSearchParams(
+            window.location.search
+        );
+
+
+    const costumeNumber =
+        params.get(
+            "costume"
+        );
+
+
+    async function loadHistory() {
+
+        if (!costumeNumber) {
+
+            historyContainer.innerHTML = `
+                    <div class="no-results">
+                        <p>
+                            No costume was specified.
+                        </p>
+                    </div>
+                `;
+
+            return;
+        }
+
+
+        historyTitle.textContent =
+            `HISTORY #${costumeNumber}`;
+
+
+        // ------------------------------------
+        // Find costume
+        // ------------------------------------
+
+        const {
+            data: costume,
+            error: costumeError
+        } =
+            await supabaseClient
+                .from("costumes")
+                .select("*")
+                .eq(
+                    "costume_number",
+                    costumeNumber
+                )
+                .maybeSingle();
+
+
+        if (costumeError) {
+
+            historyContainer.innerHTML = `
+                    <div class="no-results">
+                        <p>
+                            Database error:
+                            ${costumeError.message}
+                        </p>
+                    </div>
+                `;
+
+            return;
+        }
+
+
+        if (!costume) {
+
+            historyContainer.innerHTML = `
+                    <div class="no-results">
+                        <p>
+                            Costume #${costumeNumber}
+                            was not found.
+                        </p>
+                    </div>
+                `;
+
+            return;
+        }
+
+
+        // ------------------------------------
+        // Get history
+        // ------------------------------------
+
+        const {
+            data: history,
+            error: historyError
+        } =
+            await supabaseClient
+                .from("inventory_history")
+                .select("*")
+                .eq(
+                    "costume_id",
+                    costume.id
+                )
+                .order(
+                    "created_at",
+                    {
+                        ascending: false
+                    }
+                );
+
+
+        if (historyError) {
+
+            historyContainer.innerHTML = `
+                    <div class="no-results">
+                        <p>
+                            Database error:
+                            ${historyError.message}
+                        </p>
+                    </div>
+                `;
+
+            return;
+        }
+
+
+        if (
+            !history ||
+            history.length === 0
+        ) {
+
+            historyContainer.innerHTML = `
+                    <div class="no-results">
+                        <p>
+                            No history yet.
+                        </p>
+                    </div>
+                `;
+
+            return;
+        }
+
+
+        // ------------------------------------
+        // Build history
+        // ------------------------------------
+
+        let html = "";
+
+
+        for (
+            const entry
+            of history
+            ) {
+
+            const date =
+                new Date(
+                    entry.created_at
+                );
+
+
+            const formattedDate =
+                date.toLocaleString(
+                    "en-CA",
+                    {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit"
+                    }
+                );
+
+
+            const username =
+                entry.username ||
+                "Unknown";
+
+
+            // --------------------------------
+            // Location
+            // --------------------------------
+
+            let locationText =
+                "";
+
+
+            if (entry.inventory_id) {
+
+                const {
+                    data: inventory
+                } =
+                    await supabaseClient
+                        .from("inventory")
+                        .select(
+                            "location_type, location"
+                        )
+                        .eq(
+                            "id",
+                            entry.inventory_id
+                        )
+                        .maybeSingle();
+
+
+                if (inventory) {
+
+                    const locationType =
+                        inventory.location_type ===
+                        "back_room"
+                            ? "Back Room"
+                            : "Floor";
+
+
+                    locationText =
+                        `${locationType} — ${inventory.location}`;
+
+                }
+
+            }
+
+
+            // --------------------------------
+            // Determine action text
+            // --------------------------------
+
+            let actionText =
+                "";
+
+
+            // Quantity change
+            if (
+                entry.size &&
+                entry.old_quantity !== null &&
+                entry.new_quantity !== null
+            ) {
+
+                const oldQuantity =
+                    Number(
+                        entry.old_quantity
+                    );
+
+
+                const newQuantity =
+                    Number(
+                        entry.new_quantity
+                    );
+
+
+                const difference =
+                    newQuantity -
+                    oldQuantity;
+
+
+                if (difference > 0) {
+
+                    actionText = `
+
+                            <strong>
+                                ${escapeHTML(username)}
+                            </strong>
+
+                            added
+
+                            <strong>
+                                ${difference}
+                            </strong>
+
+                            ${escapeHTML(
+                        entry.size
+                    )}
+
+                            ${
+                        locationText
+                            ? `to <strong>${escapeHTML(locationText)}</strong>`
+                            : ""
+                    }
+
+                        `;
+
+                } else if (
+                    difference < 0
+                ) {
+
+                    actionText = `
+
+                            <strong>
+                                ${escapeHTML(username)}
+                            </strong>
+
+                            removed
+
+                            <strong>
+                                ${Math.abs(
+                        difference
+                    )}
+                            </strong>
+
+                            ${escapeHTML(
+                        entry.size
+                    )}
+
+                            ${
+                        locationText
+                            ? `from <strong>${escapeHTML(locationText)}</strong>`
+                            : ""
+                    }
+
+                        `;
+
+                } else {
+
+                    actionText = `
+
+                            <strong>
+                                ${escapeHTML(username)}
+                            </strong>
+
+                            changed
+
+                            <strong>
+                                ${escapeHTML(
+                        entry.size
+                    )}
+                            </strong>
+
+                            ${
+                        locationText
+                            ? `at <strong>${escapeHTML(locationText)}</strong>`
+                            : ""
+                    }
+
+                        `;
+
+                }
+
+            }
+
+            // Added costume
+            else if (
+                entry.action ===
+                "added costume"
+            ) {
+
+                actionText = `
+
+                        <strong>
+                            ${escapeHTML(username)}
+                        </strong>
+
+                        added costume
+
+                        <strong>
+                            #${escapeHTML(
+                    costumeNumber
+                )}
+                        </strong>
+
+                        ${
+                    locationText
+                        ? `to <strong>${escapeHTML(locationText)}</strong>`
+                        : ""
+                }
+
+                    `;
+
+            }
+
+            // Fallback
+            else {
+
+                actionText = `
+
+                        <strong>
+                            ${escapeHTML(username)}
+                        </strong>
+
+                        ${escapeHTML(
+                    entry.action ||
+                    "Updated costume"
+                )}
+
+                        ${
+                    locationText
+                        ? `at <strong>${escapeHTML(locationText)}</strong>`
+                        : ""
+                }
+
+                    `;
+
+            }
+
+
+            // --------------------------------
+            // Card
+            // --------------------------------
+
+            html += `
+
+                    <div class="history-card">
+
+                        <div class="history-date">
+                            ${formattedDate}
+                        </div>
+
+                        <div class="history-action">
+                            ${actionText}
+                        </div>
+
+                    </div>
+
+                `;
+
+        }
+
+
+        historyContainer.innerHTML =
+            html;
+
+    }
+
+
+    loadHistory();
+
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>View All - Top Stock</title>
+
+    <link rel="stylesheet" href="style.css">
+
+
+    <style>
+
+        /* ========================================
+           PRINT ONLY
+        ======================================== */
+
+        .print-table-container {
+            display: none;
+        }
+
+
+        @media print {
+
+            @page {
+                size: portrait;
+                margin: 0.5in;
+            }
+
+
+            body {
+                background: white;
+                color: black;
+            }
+
+
+            .page {
+                max-width: none;
+                padding: 0;
+                margin: 0;
+            }
+
+
+            .no-print {
+                display: none !important;
+            }
+
+
+            /* Hide normal View All */
+
+            .all-inventory {
+                display: none !important;
+            }
+
+
+            /* Print heading */
+
+            .print-table-container {
+                display: block;
+            }
+
+
+            .print-title {
+                font-size: 20px;
+                font-weight: bold;
+                margin-bottom: 4px;
+            }
+
+
+            .print-date {
+                font-size: 11px;
+                margin-bottom: 18px;
+            }
+
+
+            /* Spreadsheet table */
+
+            .print-table {
+                width: 100%;
+                border-collapse: collapse;
+                table-layout: fixed;
+                font-size: 10px;
+            }
+
+
+            .print-table th,
+            .print-table td {
+                border: 1px solid #000;
+                padding: 5px 6px;
+                text-align: left;
+                vertical-align: middle;
+            }
+
+
+            .print-table th {
+                font-weight: bold;
+                background: #eee;
+            }
+
+
+            .print-table th:nth-child(1),
+            .print-table td:nth-child(1) {
+                width: 16%;
+            }
+
+
+            .print-table th:nth-child(2),
+            .print-table td:nth-child(2) {
+                width: 34%;
+            }
+
+
+            .print-table th:nth-child(3),
+            .print-table td:nth-child(3) {
+                width: 18%;
+            }
+
+
+            .print-table th:nth-child(4),
+            .print-table td:nth-child(4) {
+                width: 17%;
+            }
+
+
+            .print-table th:nth-child(5),
+            .print-table td:nth-child(5) {
+                width: 15%;
+                text-align: center;
+            }
+
+
+            .print-table tr {
+                page-break-inside: avoid;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<main class="page">
+
+
+    <!-- ====================================
+         NORMAL HEADER
+    ===================================== -->
+
+    <header class="page-header no-print">
+
+        <button
+                class="back-button"
+                onclick="history.back()"
+        >
+            ← BACK
+        </button>
+
+        <h1>
+            VIEW ALL
+        </h1>
+
+    </header>
+
+
+    <!-- ====================================
+         PRINT BUTTON
+    ===================================== -->
+
+    <button
+            class="print-button no-print"
+            id="printButton"
+    >
+        PRINT
+    </button>
+
+
+    <!-- ====================================
+         NORMAL COSTUME LIST
+    ===================================== -->
+
+    <section
+            id="allInventory"
+            class="all-inventory no-print"
+    >
+
+        <p>
+            Loading inventory...
+        </p>
+
+    </section>
+
+
+    <!-- ====================================
+         PRINT TABLE
+    ===================================== -->
+
+    <section
+            id="printTableContainer"
+            class="print-table-container"
+    >
+
+        <div class="print-title">
+            TOP STOCK INVENTORY
+        </div>
+
+
+        <div
+                id="printDate"
+                class="print-date"
+        ></div>
+
+
+        <table class="print-table">
+
+            <thead>
+
+            <tr>
+
+                <th>
+                    Costume
+                </th>
+
+                <th>
+                    Location
+                </th>
+
+                <th>
+                    Type
+                </th>
+
+                <th>
+                    Size
+                </th>
+
+                <th>
+                    Qty
+                </th>
+
+            </tr>
+
+            </thead>
+
+
+            <tbody
+                    id="printTableBody"
+            >
+
+            </tbody>
+
+        </table>
+
+    </section>
+
+
+</main>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+<script>
+
+    // ========================================
+    // SUPABASE
+    // ========================================
+
+    const SUPABASE_URL =
+        "https://tswvzplgbqozvjpxvmop.supabase.co";
+
+
+    const SUPABASE_KEY =
+        "sb_publishable_zmRNtoynOoehGXK1F3JvMw_pxtINLOx";
+
+
+    const supabaseClient =
+        supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_KEY
+        );
+
+
+    // ========================================
+    // ELEMENTS
+    // ========================================
+
+    const container =
+        document.getElementById(
+            "allInventory"
+        );
+
+
+    const printTableBody =
+        document.getElementById(
+            "printTableBody"
+        );
+
+
+    const printDate =
+        document.getElementById(
+            "printDate"
+        );
+
+
+    // ========================================
+    // ESCAPE HTML
+    // ========================================
+
+    function escapeHTML(
+        value
+    ) {
+
+        return String(value)
+            .replace(
+                /&/g,
+                "&amp;"
+            )
+            .replace(
+                /</g,
+                "&lt;"
+            )
+            .replace(
+                />/g,
+                "&gt;"
+            )
+            .replace(
+                /"/g,
+                "&quot;"
+            )
+            .replace(
+                /'/g,
+                "&#039;"
+            );
+
+    }
+
+
+    // ========================================
+    // LOAD INVENTORY
+    // ========================================
+
+    async function loadAllInventory() {
+
+        // ------------------------------------
+        // Get costumes
+        // ------------------------------------
+
+        const {
+            data: costumes,
+            error: costumeError
+        } =
+            await supabaseClient
+                .from("costumes")
+                .select("*");
+
+
+        if (costumeError) {
+
+            container.innerHTML = `
+
+                    <div class="no-results">
+
+                        Database error:
+                        ${escapeHTML(
+                costumeError.message
+            )}
+
+                    </div>
+
+                `;
+
+            return;
+        }
+
+
+        // ------------------------------------
+        // Get inventory
+        // ------------------------------------
+
+        const {
+            data: inventory,
+            error: inventoryError
+        } =
+            await supabaseClient
+                .from("inventory")
+                .select("*");
+
+
+        if (inventoryError) {
+
+            container.innerHTML = `
+
+                    <div class="no-results">
+
+                        Database error:
+                        ${escapeHTML(
+                inventoryError.message
+            )}
+
+                    </div>
+
+                `;
+
+            return;
+        }
+
+
+        if (
+            !costumes ||
+            costumes.length === 0
+        ) {
+
+            container.innerHTML = `
+
+                    <div class="no-results">
+
+                        No costumes have been added yet.
+
+                    </div>
+
+                `;
+
+            return;
+        }
+
+
+        // ====================================
+        // SORT COSTUMES
+        // ====================================
+
+        costumes.sort(
+            function (a, b) {
+
+                return String(
+                    a.costume_number
+                ).localeCompare(
+                    String(
+                        b.costume_number
+                    ),
+                    undefined,
+                    {
+                        numeric: true
+                    }
+                );
+
+            }
+        );
+
+
+        container.innerHTML =
+            "";
+
+
+        printTableBody.innerHTML =
+            "";
+
+
+        // ====================================
+        // BUILD NORMAL VIEW + PRINT VIEW
+        // ====================================
+
+        costumes.forEach(
+            function (costume) {
+
+                const costumeInventory =
+                    inventory.filter(
+                        function (item) {
+
+                            return (
+                                item.costume_id ===
+                                costume.id
+                            );
+
+                        }
+                    );
+
+
+                // =================================
+                // NORMAL DROPDOWN
+                // =================================
+
+                const wrapper =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                wrapper.className =
+                    "costume-dropdown";
+
+
+                const header =
+                    document.createElement(
+                        "button"
+                    );
+
+
+                header.type =
+                    "button";
+
+
+                header.className =
+                    "costume-dropdown-header";
+
+
+                header.innerHTML = `
+
+                        <span>
+                            #${escapeHTML(
+                    costume.costume_number
+                )}
+                        </span>
+
+                        <span class="dropdown-arrow">
+                            ▼
+                        </span>
+
+                    `;
+
+
+                const content =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                content.className =
+                    "costume-dropdown-content";
+
+
+                let contentHTML =
+                    "";
+
+
+                costumeInventory.forEach(
+                    function (item) {
+
+                        const quantities =
+                            item.quantities ||
+                            {};
+
+
+                        let sizeHTML =
+                            "";
+
+
+                        Object.entries(
+                            quantities
+                        ).forEach(
+                            function (
+                                [size, quantity]
+                            ) {
+
+                                quantity =
+                                    Number(
+                                        quantity
+                                    );
+
+
+                                if (
+                                    quantity > 0
+                                ) {
+
+                                    sizeHTML += `
+
+                                            <div class="size-row">
+
+                                                <span>
+                                                    ${escapeHTML(
+                                        size
+                                    )}
+                                                </span>
+
+                                                <strong>
+                                                    ${quantity}
+                                                </strong>
+
+                                            </div>
+
+                                        `;
+
+                                }
+
+                            }
+                        );
+
+
+                        const locationType =
+                            item.location_type ===
+                            "back_room"
+                                ? "Back Room"
+                                : "Floor";
+
+
+                        contentHTML += `
+
+                                <div class="all-location">
+
+                                    <h3>
+
+                                        ${locationType}
+
+                                        —
+
+                                        ${escapeHTML(
+                            item.location
+                        )}
+
+                                    </h3>
+
+                                    ${sizeHTML}
+
+                                </div>
+
+                            `;
+
+
+                        // =================================
+                        // PRINT ROWS
+                        // =================================
+
+                        Object.entries(
+                            quantities
+                        ).forEach(
+                            function (
+                                [size, quantity]
+                            ) {
+
+                                quantity =
+                                    Number(
+                                        quantity
+                                    );
+
+
+                                // Don't print zero
+                                // quantities
+
+                                if (
+                                    quantity <= 0
+                                ) {
+                                    return;
+                                }
+
+
+                                const row =
+                                    document.createElement(
+                                        "tr"
+                                    );
+
+
+                                row.innerHTML = `
+
+                                        <td>
+                                            ${escapeHTML(
+                                    costume.costume_number
+                                )}
+                                        </td>
+
+                                        <td>
+                                            ${escapeHTML(
+                                    item.location
+                                )}
+                                        </td>
+
+                                        <td>
+                                            ${locationType}
+                                        </td>
+
+                                        <td>
+                                            ${escapeHTML(
+                                    size
+                                )}
+                                        </td>
+
+                                        <td>
+                                            ${quantity}
+                                        </td>
+
+                                    `;
+
+
+                                printTableBody.appendChild(
+                                    row
+                                );
+
+                            }
+                        );
+
+                    }
+                );
+
+
+                if (!contentHTML) {
+
+                    contentHTML = `
+
+                            <p>
+                                No inventory locations.
+                            </p>
+
+                        `;
+
+                }
+
+
+                content.innerHTML =
+                    contentHTML;
+
+
+                // =================================
+                // DROPDOWN CLICK
+                // =================================
+
+                header.addEventListener(
+                    "click",
+                    function () {
+
+                        const isOpen =
+                            wrapper.classList.contains(
+                                "open"
+                            );
+
+
+                        document
+                            .querySelectorAll(
+                                ".costume-dropdown"
+                            )
+                            .forEach(
+                                function (
+                                    item
+                                ) {
+
+                                    item.classList.remove(
+                                        "open"
+                                    );
+
+                                }
+                            );
+
+
+                        if (!isOpen) {
+
+                            wrapper.classList.add(
+                                "open"
+                            );
+
+                        }
+
+                    }
+                );
+
+
+                wrapper.appendChild(
+                    header
+                );
+
+
+                wrapper.appendChild(
+                    content
+                );
+
+
+                container.appendChild(
+                    wrapper
+                );
+
+            }
+        );
+
+
+        // ====================================
+        // PRINT DATE
+        // ====================================
+
+        printDate.textContent =
+            `Printed ${new Date().toLocaleString(
+                "en-CA",
+                {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit"
+                }
+            )}`;
+
+    }
+
+
+    // ========================================
+    // PRINT BUTTON
+    // ========================================
+
+    document
+        .getElementById(
+            "printButton"
+        )
+        .addEventListener(
+            "click",
+            function () {
+
+                window.print();
+
+            }
+        );
+
+
+    // ========================================
+    // START
+    // ========================================
+
+    loadAllInventory();
+
+</script>
+
+</body>
+
+</html>

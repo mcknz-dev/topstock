@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Top Stock</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<main class="home-page">
+
+  <header class="home-header">
+    <h1>TOP STOCK</h1>
+    <p id="welcomeMessage"></p>
+  </header>
+
+  <section class="search-section">
+
+    <h2>Costume Lookup</h2>
+
+    <form id="searchForm">
+
+      <input
+              type="text"
+              id="costumeNumber"
+              placeholder="Enter costume number"
+              required
+      >
+
+      <button type="submit">SEARCH</button>
+
+    </form>
+
+    <div id="searchResults"></div>
+
+  </section>
+
+  <section class="home-navigation">
+
+    <div class="section-label">
+      INVENTORY
+    </div>
+
+    <div class="inventory-buttons">
+
+      <button
+              type="button"
+              onclick="window.location.href='backroom.html'"
+      >
+        BACK ROOM
+      </button>
+
+      <button
+              type="button"
+              onclick="window.location.href='floor.html'"
+      >
+        FLOOR
+      </button>
+
+    </div>
+
+    <button
+            type="button"
+            class="view-all-button"
+            onclick="window.location.href='all.html'"
+    >
+      VIEW ALL
+    </button>
+
+    <button
+            type="button"
+            class="add-costume-button"
+            onclick="window.location.href='add.html'"
+    >
+      + ADD COSTUME
+    </button>
+
+    <div class="utility-links">
+
+      <button
+              type="button"
+              onclick="window.location.href='master-history.html'"
+      >
+        INVENTORY HISTORY
+      </button>
+
+      <span>·</span>
+
+      <button
+              type="button"
+              onclick="document.getElementById('bugReportModal').hidden = false"
+      >
+        REPORT A BUG
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <div
+          id="bugReportModal"
+          class="bug-report-modal"
+          hidden
+  >
+
+    <div class="bug-report-box">
+
+      <button
+              type="button"
+              class="bug-report-close"
+              onclick="document.getElementById('bugReportModal').hidden = true"
+      >
+        ×
+      </button>
+
+      <h2>Report a Bug</h2>
+
+      <p>
+        Tell us what went wrong.
+      </p>
+
+      <textarea
+              id="bugDescription"
+              placeholder="Describe the problem..."
+              rows="5"
+      ></textarea>
+
+      <button
+              type="button"
+              class="bug-submit-button"
+              id="submitBugReport"
+      >
+        SUBMIT REPORT
+      </button>
+
+      <p
+              id="bugReportMessage"
+              class="bug-report-message"
+      ></p>
+
+    </div>
+
+  </div>
+
+
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js"></script>
+
+</body>
+</html>

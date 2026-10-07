@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Edit Costume - Top Stock</title>
+
+  <link
+          rel="stylesheet"
+          href="style.css"
+  >
+
+</head>
+
+<body>
+
+<main class="page edit-page">
+
+  <header class="edit-page-header">
+
+    <button
+            class="back-button edit-back-button"
+            onclick="history.back()"
+    >
+      ← BACK
+    </button>
+
+    <h1 id="editTitle">
+      EDIT COSTUME
+    </h1>
+
+  </header>
+
+
+  <div
+          id="editContainer"
+          class="edit-container"
+  >
+    <p>Loading costume...</p>
+  </div>
+
+</main>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="app.js"></script>
+
+</body>
+
+</html>
