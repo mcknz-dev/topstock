@@ -230,11 +230,11 @@
                 </th>
 
                 <th>
-                    Location
+                    Type
                 </th>
 
                 <th>
-                    Type
+                    Location
                 </th>
 
                 <th>
@@ -657,34 +657,26 @@
 
 
                                 row.innerHTML = `
+    <td>
+        ${escapeHTML(costume.costume_number)}
+    </td>
 
-                                        <td>
-                                            ${escapeHTML(
-                                    costume.costume_number
-                                )}
-                                        </td>
+    <td>
+        ${locationType}
+    </td>
 
-                                        <td>
-                                            ${escapeHTML(
-                                    item.location
-                                )}
-                                        </td>
+    <td>
+        ${escapeHTML(item.location)}
+    </td>
 
-                                        <td>
-                                            ${locationType}
-                                        </td>
+    <td>
+        ${escapeHTML(size)}
+    </td>
 
-                                        <td>
-                                            ${escapeHTML(
-                                    size
-                                )}
-                                        </td>
-
-                                        <td>
-                                            ${quantity}
-                                        </td>
-
-                                    `;
+    <td>
+        ${quantity}
+    </td>
+`;
 
 
                                 printTableBody.appendChild(
