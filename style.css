@@ -1754,3 +1754,14 @@ button:hover {
     color: #bbb;
     font-size: 12px;
 }
+
+.quantity-button,
+.dynamic-size-row button {
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+button {
+    touch-action: manipulation;
+}
