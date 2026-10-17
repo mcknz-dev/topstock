@@ -86,7 +86,7 @@ if (loginForm) {
             );
 
             window.location.href =
-                "home.html";
+                "menu.html";
 
         }
     );

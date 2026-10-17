@@ -1805,3 +1805,7 @@ button {
     border-bottom: none;
     padding-bottom: 0;
 }
+
+.access-card h1 {
+    font-family: 'Bruno Ace SC', sans-serif;
+}
